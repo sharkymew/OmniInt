@@ -386,6 +386,7 @@ OmniInt OmniInt::operator+(const OmniInt &other) const
     if (pos == other.pos)
     {
         OmniInt result;
+        result.val.clear();
         result.pos = pos;
         int carry = 0;
         size_t i = 0, j = 0;
@@ -398,6 +399,11 @@ OmniInt OmniInt::operator+(const OmniInt &other) const
                 sum += other.val[j++];
             result.val.push_back(sum % 10);
             carry = sum / 10;
+        }
+        // 在返回前，处理结果为0的特殊情况
+        if (result.val.empty())
+        {
+            result.val.push_back(0);
         }
         return result;
     }
@@ -419,6 +425,7 @@ OmniInt OmniInt::operator-(const OmniInt &other) const
     }
 
     OmniInt result;
+    result.val.clear();
     result.pos = true;
     int borrow = 0;
     for (size_t i = 0; i < val.size(); ++i)

@@ -1,7 +1,7 @@
 #include "OmniInt.h"
 #include <iostream>
 #include <string>
-#include <stdexcept> // 用于捕获异常
+#include <stdexcept>
 
 int main()
 {
