@@ -1,54 +1,307 @@
-#include "OmniInt.h"
 #include <iostream>
 #include <string>
+#include <vector>
 #include <stdexcept>
+#include <limits>
+#include <sstream>
+
+#include "OmniInt.h"
+
+// 全局计数器，用于统计测试结果
+int tests_passed = 0;
+int tests_failed = 0;
+
+// =========================================================================
+// 测试辅助框架
+// =========================================================================
+
+/**
+ * @brief 运行一个测试用例并报告结果
+ * @param description 测试用例的描述
+ * @param condition 测试的布尔条件，true 表示通过，false 表示失败
+ */
+void test_case(const std::string &description, bool condition)
+{
+    if (condition)
+    {
+        tests_passed++;
+        std::cout << "[PASS] " << description << std::endl;
+    }
+    else
+    {
+        tests_failed++;
+        std::cout << "[FAIL] " << description << std::endl;
+    }
+}
+
+// =========================================================================
+// 测试函数定义
+// =========================================================================
+
+void test_constructors_and_assignment()
+{
+    std::cout << "\n--- Testing Constructors and Assignment ---\n";
+
+    // 默认构造
+    OmniInt a;
+    test_case("Default constructor", a.toString() == "0");
+
+    // long long 构造
+    OmniInt b(12345);
+    test_case("long long constructor (positive)", b.toString() == "12345");
+    OmniInt c(-54321);
+    test_case("long long constructor (negative)", c.toString() == "-54321");
+    OmniInt d(0);
+    test_case("long long constructor (zero)", d.toString() == "0");
+    OmniInt e(LLONG_MAX);
+    test_case("long long constructor (LLONG_MAX)", e.toString() == std::to_string(LLONG_MAX));
+    OmniInt f(LLONG_MIN);
+    test_case("long long constructor (LLONG_MIN)", f.toString() == std::to_string(LLONG_MIN));
+
+    // string 构造
+    OmniInt g("98765432109876543210");
+    test_case("string constructor (large positive)", g.toString() == "98765432109876543210");
+    OmniInt h("-123456789123456789");
+    test_case("string constructor (large negative)", h.toString() == "-123456789123456789");
+    OmniInt i("+100");
+    test_case("string constructor (with + sign)", i.toString() == "100");
+
+    // 拷贝构造
+    OmniInt j = g;
+    test_case("Copy constructor", j.toString() == g.toString());
+
+    // 赋值运算符
+    OmniInt k;
+    k = 5;
+    test_case("Assignment from long long", k == 5);
+    k = "-5";
+    test_case("Assignment from string", k == -5);
+    k = j;
+    test_case("Assignment from OmniInt", k == j);
+
+    // 移动构造和移动赋值 (隐式测试)
+    auto create_temp = []()
+    { return OmniInt("123"); };
+    OmniInt l = create_temp();
+    test_case("Move constructor (from temporary)", l == 123);
+    k = create_temp();
+    test_case("Move assignment (from temporary)", k == 123);
+}
+
+void test_relational_operators()
+{
+    std::cout << "\n--- Testing Relational Operators ---\n";
+    OmniInt a(100), b(200), c(-100), d(100);
+
+    test_case("Equality (==)", a == d);
+    test_case("Inequality (!=)", a != b);
+    test_case("Less than (<)", a < b);
+    test_case("Less than or equal (<=) - less", a <= b);
+    test_case("Less than or equal (<=) - equal", a <= d);
+    test_case("Greater than (>)", b > a);
+    test_case("Greater than or equal (>=) - greater", b >= a);
+    test_case("Greater than or equal (>=) - equal", a >= d);
+    test_case("Positive vs Negative (<)", c < a);
+    test_case("Positive vs Negative (>)", a > c);
+    test_case("Zero comparison", OmniInt(0) == OmniInt("-0"));
+}
+
+void test_arithmetic_operators()
+{
+    std::cout << "\n--- Testing Arithmetic Operators ---\n";
+    OmniInt a("1000"), b("123"), c("-1000"), d("-123");
+
+    // Addition
+    test_case("Addition (pos + pos)", (a + b) == OmniInt("1123"));
+    test_case("Addition (neg + neg)", (c + d) == OmniInt("-1123"));
+    test_case("Addition (pos + neg, result pos)", (a + d) == OmniInt("877"));
+    test_case("Addition (pos + neg, result neg)", (b + c) == OmniInt("-877"));
+    test_case("Addition (result zero)", (a + c) == OmniInt("0"));
+
+    // Subtraction
+    test_case("Subtraction (pos - pos, result pos)", (a - b) == OmniInt("877"));
+    test_case("Subtraction (pos - pos, result neg)", (b - a) == OmniInt("-877"));
+    test_case("Subtraction (pos - neg)", (a - d) == OmniInt("1123"));
+    test_case("Subtraction (neg - pos)", (c - a) == OmniInt("-2000"));
+    test_case("Subtraction (result zero)", (a - a) == OmniInt("0"));
+
+    // Multiplication
+    OmniInt big1("123456789"), big2("987654321");
+    test_case("Multiplication (pos * pos)", (a * b) == OmniInt("123000"));
+    test_case("Multiplication (pos * neg)", (a * d) == OmniInt("-123000"));
+    test_case("Multiplication (neg * neg)", (c * d) == OmniInt("123000"));
+    test_case("Multiplication (num * 0)", (a * 0) == OmniInt("0"));
+    test_case("Multiplication (large numbers)", (big1 * big2).toString() == "121932631112635269");
+
+    // Division
+    test_case("Division (no remainder)", (a / 10) == OmniInt("100"));
+    test_case("Division (with remainder, truncation)", (a / b) == OmniInt("8"));
+    test_case("Division (pos / neg)", (a / d) == OmniInt("-8"));
+    test_case("Division (neg / neg)", (c / d) == OmniInt("8"));
+    test_case("Division (0 / num)", (OmniInt(0) / a) == OmniInt("0"));
+
+    // Modulo
+    test_case("Modulo (pos % pos)", (a % b) == OmniInt("16"));
+    test_case("Modulo (pos % neg)", (OmniInt(10) % OmniInt(-3)) == OmniInt("1"));
+    test_case("Modulo (neg % pos)", (OmniInt(-10) % OmniInt(3)) == OmniInt("-1"));
+    test_case("Modulo (neg % neg)", (OmniInt(-10) % OmniInt(-3)) == OmniInt("-1"));
+}
+
+void test_compound_and_increment()
+{
+    std::cout << "\n--- Testing Compound and Increment/Decrement Operators ---\n";
+    OmniInt a(100);
+    a += 50;
+    test_case("+= operator", a == 150);
+    a -= 100;
+    test_case("-= operator", a == 50);
+    a *= 4;
+    test_case("*= operator", a == 200);
+    a /= 10;
+    test_case("/= operator", a == 20);
+    a %= 7;
+    test_case("%= operator", a == 6);
+
+    // Increment/Decrement
+    a = 10;
+    test_case("Prefix ++", ++a == 11 && a == 11);
+    test_case("Postfix ++", a++ == 11 && a == 12);
+    test_case("Prefix --", --a == 11 && a == 11);
+    test_case("Postfix --", a-- == 11 && a == 10);
+}
+
+void test_exceptions()
+{
+    std::cout << "\n--- Testing Exception Safety ---\n";
+
+    // Invalid string
+    try
+    {
+        OmniInt a("abc");
+        test_case("Exception on invalid string", false);
+    }
+    catch (const std::invalid_argument &)
+    {
+        test_case("Exception on invalid string", true);
+    }
+
+    // Division by zero
+    try
+    {
+        OmniInt a = 100 / OmniInt(0);
+        test_case("Exception on division by zero", false);
+    }
+    catch (const std::runtime_error &)
+    {
+        test_case("Exception on division by zero", true);
+    }
+
+    // Modulo by zero
+    try
+    {
+        OmniInt a = 100 % OmniInt(0);
+        test_case("Exception on modulo by zero", false);
+    }
+    catch (const std::runtime_error &)
+    {
+        test_case("Exception on modulo by zero", true);
+    }
+
+    // toLongLong overflow
+    try
+    {
+        OmniInt too_big(LLONG_MAX);
+        too_big += 1;
+        too_big.toLongLong();
+        test_case("Exception on toLongLong() overflow (large)", false);
+    }
+    catch (const std::overflow_error &)
+    {
+        test_case("Exception on toLongLong() overflow (large)", true);
+    }
+
+    try
+    {
+        OmniInt too_small(LLONG_MIN);
+        too_small -= 1;
+        too_small.toLongLong();
+        test_case("Exception on toLongLong() overflow (small)", false);
+    }
+    catch (const std::overflow_error &)
+    {
+        test_case("Exception on toLongLong() overflow (small)", true);
+    }
+}
+
+void test_utility_and_streams()
+{
+    std::cout << "\n--- Testing Utility Functions and Streams ---\n";
+
+    OmniInt a("-12345");
+    test_case("toString()", a.toString() == "-12345");
+    test_case("digitCount()", a.digitCount() == 5);
+    test_case("digitCount() on zero", OmniInt(0).digitCount() == 1);
+
+    // Stream I/O
+    OmniInt b;
+    std::stringstream ss;
+    ss << a;
+    ss >> b;
+    test_case("Stream I/O (<< and >>)", a == b);
+}
+
+void test_sqrt()
+{
+    std::cout << "\n--- Testing sqrt() Function ---\n";
+
+    test_case("sqrt(0)", sqrt(OmniInt(0)) == 0);
+    test_case("sqrt(1)", sqrt(OmniInt(1)) == 1);
+    test_case("sqrt(100)", sqrt(OmniInt(100)) == 10);
+    test_case("sqrt(99)", sqrt(OmniInt(99)) == 9); // Test truncation
+    test_case("sqrt(perfect square)", sqrt(OmniInt("12345678987654321")) == OmniInt("111111111"));
+
+    // The big test case from our debugging session
+    OmniInt n("98765432109876543210");
+    OmniInt expected_sqrt("9938079900");
+    test_case("sqrt(large number)", sqrt(n) == expected_sqrt);
+
+    // Exception for negative input
+    try
+    {
+        sqrt(OmniInt(-1));
+        test_case("Exception on sqrt(-1)", false);
+    }
+    catch (const std::domain_error &)
+    {
+        test_case("Exception on sqrt(-1)", true);
+    }
+}
+
+// =========================================================================
+// 主函数
+// =========================================================================
 
 int main()
 {
-    // 构造 OmniInt 对象
-    OmniInt num1("12345678901234567890"); // 从字符串构造
-    OmniInt num2(54321);                  // 从 long long 构造
-    OmniInt num3 = num1 + num2;           // 加法运算
+    std::cout << "========================================" << std::endl;
+    std::cout << "     Starting OmniInt Test Suite        " << std::endl;
+    std::cout << "========================================" << std::endl;
 
-    std::cout << "num1: " << num1 << std::endl;
-    std::cout << "num2: " << num2 << std::endl;
-    std::cout << "num1 + num2 = " << num3 << std::endl;
+    test_constructors_and_assignment();
+    test_relational_operators();
+    test_arithmetic_operators();
+    test_compound_and_increment();
+    test_utility_and_streams();
+    test_sqrt();
+    test_exceptions();
 
-    // 乘法和除法
-    OmniInt product = num1 * num2;
-    std::cout << "num1 * num2 = " << product << std::endl;
+    std::cout << "\n----------------------------------------" << std::endl;
+    std::cout << "Test Summary:" << std::endl;
+    std::cout << "  Total tests run: " << tests_passed + tests_failed << std::endl;
+    std::cout << "  Passed: " << tests_passed << std::endl;
+    std::cout << "  Failed: " << tests_failed << std::endl;
+    std::cout << "========================================" << std::endl;
 
-    // 平方根计算
-    OmniInt large_num_for_sqrt("98765432109876543210");
-    try
-    {
-        OmniInt result_sqrt = sqrt(large_num_for_sqrt); // sqrt函数仍然返回OmniInt
-        std::cout << "sqrt(" << large_num_for_sqrt << ") = " << result_sqrt << std::endl;
-    }
-    catch (const std::domain_error &e)
-    {
-        std::cerr << "Error calculating square root: " << e.what() << std::endl;
-    }
-
-    // 异常处理示例 (除零)
-    OmniInt zero(0);
-    try
-    {
-        OmniInt division_by_zero = num1 / zero; // 这会抛出异常
-        std::cout << "Result of division by zero: " << division_by_zero << std::endl;
-    }
-    catch (const std::runtime_error &e)
-    {
-        std::cerr << "Error: " << e.what() << std::endl;
-    }
-
-    // 其他操作
-    OmniInt counter(10);
-    std::cout << "Counter initially: " << counter << std::endl;
-    counter++;
-    std::cout << "Counter after increment: " << counter << std::endl;
-    counter -= 5;
-    std::cout << "Counter after decrement: " << counter << std::endl;
-
-    return 0;
+    // 如果有测试失败，返回非零退出码
+    return (tests_failed > 0) ? 1 : 0;
 }
