@@ -5,7 +5,7 @@ This is a header file for high-precision integer calculations.
 
 Copyright(C) 2025 SharkyMew
 
-Version 1.2.1
+Version 1.2.2
 */
 
 #ifndef OmniInt_H
@@ -18,6 +18,7 @@ Version 1.2.1
 #include <cmath>
 #include <stdexcept>
 #include <algorithm>
+#include <limits> // 引入 limits 以便使用 LLONG_MAX 和 LLONG_MIN
 
 /**
  * @class OmniInt
@@ -192,8 +193,9 @@ public:
 
     /**
      * @brief 转换为 long long。
-     * @details 如果 OmniInt 的值超出 long long 的范围，可能会导致溢出。
+     * @details 如果 OmniInt 的值超出 long long 的范围，会抛出 std::overflow_error。
      * @return 当前 OmniInt 对象等效的 long long 值。
+     * @throw std::overflow_error 如果 OmniInt 的值超出 long long 的范围。
      */
     long long toLongLong() const;
 
@@ -246,23 +248,33 @@ OmniInt::OmniInt() : pos(true)
 
 OmniInt::OmniInt(long long n)
 {
-    if (n >= 0)
+    // FIX: 修正对 LLONG_MIN 的处理
+    if (n == 0)
     {
         pos = true;
+        val.push_back(0);
+        return;
+    }
+
+    if (n > 0)
+    {
+        pos = true;
+        while (n > 0)
+        {
+            val.push_back(n % 10);
+            n /= 10;
+        }
     }
     else
     {
         pos = false;
-        n = -n;
-    }
-    if (n == 0)
-    {
-        val.push_back(0);
-    }
-    while (n > 0)
-    {
-        val.push_back(n % 10);
-        n /= 10;
+        // 使用 unsigned long long 来安全地处理 n 的绝对值，避免 -LLONG_MIN 溢出
+        unsigned long long magnitude = -static_cast<unsigned long long>(n);
+        while (magnitude > 0)
+        {
+            val.push_back(magnitude % 10);
+            magnitude /= 10;
+        }
     }
 }
 
@@ -298,6 +310,11 @@ OmniInt::OmniInt(const std::string &s)
         val.push_back(s[i] - '0');
     }
     trim();
+    // FIX: 规范化0的表示，防止出现 "-0"
+    if (val.size() == 1 && val[0] == 0)
+    {
+        pos = true;
+    }
 }
 
 OmniInt::OmniInt(const OmniInt &other) : val(other.val), pos(other.pos) {}
@@ -305,23 +322,33 @@ OmniInt::OmniInt(const OmniInt &other) : val(other.val), pos(other.pos) {}
 OmniInt &OmniInt::operator=(long long n)
 {
     val.clear();
-    if (n >= 0)
+    // FIX: 修正对 LLONG_MIN 的处理
+    if (n == 0)
     {
         pos = true;
+        val.push_back(0);
+        return *this;
+    }
+
+    if (n > 0)
+    {
+        pos = true;
+        while (n > 0)
+        {
+            val.push_back(n % 10);
+            n /= 10;
+        }
     }
     else
     {
         pos = false;
-        n = -n;
-    }
-    if (n == 0)
-    {
-        val.push_back(0);
-    }
-    while (n > 0)
-    {
-        val.push_back(n % 10);
-        n /= 10;
+        // 使用 unsigned long long 来安全地处理 n 的绝对值，避免 -LLONG_MIN 溢出
+        unsigned long long magnitude = -static_cast<unsigned long long>(n);
+        while (magnitude > 0)
+        {
+            val.push_back(magnitude % 10);
+            magnitude /= 10;
+        }
     }
     return *this;
 }
@@ -359,6 +386,11 @@ OmniInt &OmniInt::operator=(const std::string &s)
         val.push_back(s[i] - '0');
     }
     trim();
+    // FIX: 规范化0的表示，防止出现 "-0"
+    if (val.size() == 1 && val[0] == 0)
+    {
+        pos = true;
+    }
     return *this;
 }
 
@@ -400,11 +432,6 @@ OmniInt OmniInt::operator+(const OmniInt &other) const
             result.val.push_back(sum % 10);
             carry = sum / 10;
         }
-        // 在返回前，处理结果为0的特殊情况
-        if (result.val.empty())
-        {
-            result.val.push_back(0);
-        }
         return result;
     }
     return *this - (-other);
@@ -426,7 +453,8 @@ OmniInt OmniInt::operator-(const OmniInt &other) const
 
     OmniInt result;
     result.val.clear();
-    result.pos = true;
+    // 结果的符号应与被减数相同（除非结果为0）
+    result.pos = pos;
     int borrow = 0;
     for (size_t i = 0; i < val.size(); ++i)
     {
@@ -445,8 +473,7 @@ OmniInt OmniInt::operator-(const OmniInt &other) const
         result.val.push_back(diff);
     }
     result.trim();
-    if (!pos)
-        result.pos = false;
+    // 规范化0的符号
     if (result.val.size() == 1 && result.val[0] == 0)
         result.pos = true;
     return result;
@@ -489,11 +516,9 @@ OmniInt OmniInt::operator/(const OmniInt &other) const
         return OmniInt(0);
     }
 
-    // 获取绝对值
     OmniInt abs_this = abs();
     OmniInt abs_other = other.abs();
 
-    // 特殊情况：除数为1或-1
     if (abs_other == 1)
     {
         OmniInt result = *this;
@@ -503,27 +528,22 @@ OmniInt OmniInt::operator/(const OmniInt &other) const
         return result;
     }
 
-    // 预先计算除数的倍数（1-9倍）
     std::vector<OmniInt> multiples(10);
     for (int i = 1; i <= 9; ++i)
     {
         multiples[i] = abs_other * i;
     }
 
-    // 准备长除法
     std::vector<int> quotient_digits;
     OmniInt current = 0;
 
-    // 从最高位向最低位处理（小端序：最高位在val的末尾）
     for (int i = val.size() - 1; i >= 0; --i)
     {
-        current = current * 10 + val[i]; // 左移一位并添加新数字
+        current = current * 10 + val[i];
 
-        // 计算当前位的商
         int digit = 0;
         if (current >= abs_other)
         {
-            // 高效商位计算：从9到1查找合适的倍数
             for (int d = 9; d >= 1; --d)
             {
                 if (multiples[d] <= current)
@@ -537,15 +557,12 @@ OmniInt OmniInt::operator/(const OmniInt &other) const
         quotient_digits.push_back(digit);
     }
 
-    // 反转商位序列（小端序转换）
     std::reverse(quotient_digits.begin(), quotient_digits.end());
 
-    // 构造结果
     OmniInt quotient;
     quotient.val = quotient_digits;
-    quotient.trim(); // 移除前导零
+    quotient.trim();
 
-    // 处理符号
     quotient.pos = (pos == other.pos);
     if (quotient == 0)
         quotient.pos = true;
@@ -592,17 +609,36 @@ bool OmniInt::operator!=(const OmniInt &other) const { return compare(other) != 
 
 long long OmniInt::toLongLong() const
 {
-    long long result = 0;
-    long long power_of_10 = 1;
-    for (size_t i = 0; i < val.size(); ++i)
+    // FIX: 重写整个函数以实现正确的溢出检查和转换
+
+    // 1. 先通过与 long long 范围的 OmniInt 表示进行比较，来严格检查溢出
+    if (pos)
     {
-        if (i > 18 && val.size() > 19)
-        { // 粗略的溢出检查
+        // 如果是正数，与 LLONG_MAX 比较
+        static const OmniInt llong_max(std::numeric_limits<long long>::max());
+        if (*this > llong_max)
+        {
             throw std::overflow_error("OmniInt value too large for long long");
         }
-        result += val[i] * power_of_10;
-        power_of_10 *= 10;
     }
+    else
+    {
+        // 如果是负数，与 LLONG_MIN 比较
+        static const OmniInt llong_min(std::numeric_limits<long long>::min());
+        if (*this < llong_min)
+        {
+            throw std::overflow_error("OmniInt value too small for long long");
+        }
+    }
+
+    // 2. 如果检查通过，说明数值在 long long 范围内，可以安全转换
+    //    使用从高位到低位累乘的方式进行转换，避免了 power_of_10 自身溢出的问题
+    long long result = 0;
+    for (int i = val.size() - 1; i >= 0; --i)
+    {
+        result = result * 10 + val[i];
+    }
+
     return pos ? result : -result;
 }
 
@@ -653,6 +689,12 @@ int OmniInt::compare(const OmniInt &other) const
     if (!pos && other.pos)
         return -1;
 
+    // 对于0的特殊情况，-0 == +0
+    if (val.size() == 1 && val[0] == 0 && other.val.size() == 1 && other.val[0] == 0)
+    {
+        return 0;
+    }
+
     int sign_multiplier = pos ? 1 : -1;
 
     if (val.size() < other.val.size())
@@ -697,7 +739,7 @@ std::istream &operator>>(std::istream &is, OmniInt &n)
 {
     std::string s;
     is >> s;
-    n = s;
+    n = s; // 调用修正后的赋值运算符
     return is;
 }
 
@@ -719,15 +761,18 @@ OmniInt sqrt(const OmniInt &n)
         return 0;
     }
 
-    // 使用新的digitCount方法获取数字位数
+    // 使用 digitCount 方法获取数字位数
     size_t digits = n.digitCount();
 
-    // 更好的初始猜测值：10^(digits/2)
+    // 更好的初始猜测值：10^((digits-1)/2)
     OmniInt x = 1;
-    for (size_t i = 0; i < (digits + 1) / 2; i++)
+    // 稍微优化一下初始值的计算，避免过大
+    std::string initial_guess_str = "1";
+    for (size_t i = 0; i < (digits - 1) / 2; ++i)
     {
-        x *= 10;
+        initial_guess_str += '0';
     }
+    x = initial_guess_str;
 
     while (true)
     {
@@ -738,6 +783,13 @@ OmniInt sqrt(const OmniInt &n)
         }
         x = next_x;
     }
+
+    // 牛顿法的结果可能偏大1，最后修正
+    if (x * x > n)
+    {
+        x -= 1;
+    }
+
     return x;
 }
 
