@@ -1,131 +1,160 @@
-# OmniInt - C++ 高精度整数库
+# OmniInt: 高精度整数计算库
 
-## 简介
+![Language](https://img.shields.io/badge/language-C%2B%2B-blue.svg)
+![Standard](https://img.shields.io/badge/C%2B%2B-11%2F14%2F17%2F20-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-OmniInt 是一个强大的 C++ 头文件库，专为处理任意大小的整数计算而设计，超越了标准数据类型（如 long long）的限制。无论是科学计算、密码学、数学问题还是其他需要大数运算的场景，OmniInt 都能提供稳定、高效且易用的解决方案。
+**OmniInt** 是一个轻量级、仅含头文件的 C++ 库，用于进行任意大小的整数（高精度）算术运算。它旨在克服 C++ 内置整数类型（如 `int`, `long long`）的范围限制，让大数计算变得像操作普通整数一样简单直观。
 
-这个库通过模拟手算的方式实现，将大整数存储为数字向量，并重载了常见的算术、关系以及流运算符，让 OmniInt 对象可以像普通整数一样使用。
+## ✨ 主要特性
 
-## 主要特性
+- **任意精度**：支持超出 `long long` 范围的极大或极小整数。
+- **完整的运算符重载**：
+  - **算术运算**: `+`, `-`, `*`, `/`, `%`
+  - **关系运算**: `==`, `!=`, `<`, `>`, `<=`, `>=`
+  - **复合赋值**: `+=`, `-=`, `*=`, `/=`, `%=`
+  - **一元运算**: `-` (负号), `++`, `--` (前缀/后缀)
+- **易于使用的接口**：
+  -可通过 `long long` 和 `std::string` 进行构造和赋值。
+  -支持标准的输入/输出流操作（`<<` 和 `>>`）。
+- **数学函数**：
+  -内置高效的整数平方根函数 `sqrt()`。
+- **异常安全**：在遇到除以零、类型转换溢出等错误时，会抛出标准异常。
+- **易于集成**：仅需一个头文件 (`OmniInt.h`) 即可集成到您的项目中。
 
-- **任意精度整数**：支持理论上无限大的整数。
-- **全面的数学运算**：
-  - 加法 (+, +=)
-  - 减法 (-, -=)
-  - 乘法 (*, *=)
-  - 除法 (/, /=)
-  - 取模 (%, %=)
-  - 取反 (- 一元运算符)
-  - 自增 (++ 前缀/后缀)
-  - 自减 (-- 前缀/后缀)
-- **灵活的构造与赋值**：支持从 long long 和 std::string 进行构造和赋值。
-- **关系运算符**：支持所有标准的关系比较 (<, >, <=, >=, ==, !=)。
-- **类型转换**：可转换为 long long (带溢出检查) 和 std::string。
-- **流操作**：通过 std::cout 和 std::cin 直接进行输入输出。
-- **整数平方根**：提供 sqrt() 函数计算大数的整数平方根（使用牛顿迭代法）。
-- **错误处理**：对除零、无效字符串格式、负数平方根和 long long 转换溢出等情况抛出标准异常。
+## 🚀 快速开始
 
-## 如何使用
+### 依赖要求
 
-OmniInt 是一个头文件库（header-only library），这意味着您无需编译额外的 .cpp 文件。只需将 InfInt.h 文件（请注意：您需要将文件名从 InfInt.h 重命名为 OmniInt.h 以与新名称保持一致）包含到您的 C++ 项目中即可开始使用。
+- 一个支持 C++11 或更高标准的 C++ 编译器 (例如 g++, Clang++)。
 
-### 1. 包含头文件
+### 如何使用
 
-将 OmniInt.h 文件复制到您的项目目录中，然后在您的 C++ 源文件中包含它：
+1.  将 `OmniInt.h` 文件复制到您的项目目录中。
+2.  在您的 C++源文件中包含该头文件：
+
+    ```cpp
+    #include "OmniInt.h"
+    ```
+
+3.  开始使用 `OmniInt` 对象进行计算！
+
+    ```cpp
+    #include <iostream>
+    #include "OmniInt.h"
+
+    int main() {
+        // 从字符串创建非常大的整数
+        OmniInt a("12345678901234567890");
+        OmniInt b("98765432109876543210");
+
+        // 直接进行算术运算
+        OmniInt sum = a + b;
+        OmniInt product = a * 5; // 可与普通整数混合运算
+
+        std::cout << "Number a: " << a << std::endl;
+        std::cout << "Number b: " << b << std::endl;
+        std::cout << "Sum: " << sum << std::endl;
+        std::cout << "Product (a * 5): " << product << std::endl;
+
+        return 0;
+    }
+    ```
+
+## 📚 API 用法示例
+
+### 初始化
+
+您可以使用多种方式创建 `OmniInt` 对象。
 
 ```cpp
-#include "OmniInt.h"
+// 默认构造，值为 0
+OmniInt a;
+
+// 从 long long 构造
+OmniInt b(12345LL);
+OmniInt c(-98765);
+
+// 从字符串构造（支持 +/- 前缀）
+OmniInt d("123456789012345678901234567890");
+OmniInt e("-98765432109876543210");
+OmniInt f("+1024");
 ```
 
-### 2. 编译要求
+### 算术运算
 
-OmniInt 库使用了一些现代 C++ 特性，建议使用 C++11 或更高版本的编译器进行编译（例如 GCC 5+ 或 Clang 3.4+）。
-
-编译命令示例 (使用 g++):
-
-```bash
-g++ your_program.cpp -o your_program -std=c++11 # 或 -std=c++14, -std=c++17, -std=c++20
-```
-
-### 3. 基本用法示例
+所有基本算术运算符均已重载。
 
 ```cpp
-#include "OmniInt.h" // 本项目头文件
-#include <iostream>
-#include <string>
-#include <stdexcept> // 用于捕获异常
+OmniInt x = "1000";
+OmniInt y = "33";
 
-int main() {
-    // 构造 OmniInt 对象
-    OmniInt num1("12345678901234567890"); // 从字符串构造
-    OmniInt num2(54321);                 // 从 long long 构造
-    OmniInt num3 = num1 + num2;          // 加法运算
+OmniInt quotient = x / y;   // 结果: 30
+OmniInt remainder = x % y;  // 结果: 10
+OmniInt product = x * y;    // 结果: 33000
+```
 
-    std::cout << "num1: " << num1 << std::endl;
-    std::cout << "num2: " << num2 << std::endl;
-    std::cout << "num1 + num2 = " << num3 << std::endl;
+### 关系比较
 
-    // 乘法和除法
-    OmniInt product = num1 * num2;
-    std::cout << "num1 * num2 = " << product << std::endl;
+可以像比较内置整数一样比较 `OmniInt` 对象。
 
-    // 平方根计算
-    OmniInt large_num_for_sqrt("98765432109876543210");
-    try {
-        OmniInt result_sqrt = sqrt(large_num_for_sqrt); // sqrt函数仍然返回OmniInt
-        std::cout << "sqrt(" << large_num_for_sqrt << ") = " << result_sqrt << std::endl;
-    } catch (const std::domain_error& e) {
-        std::cerr << "Error calculating square root: " << e.what() << std::endl;
-    }
+```cpp
+OmniInt big("999999");
+OmniInt small("99999");
 
-    // 异常处理示例 (除零)
-    OmniInt zero(0);
-    try {
-        OmniInt division_by_zero = num1 / zero; // 这会抛出异常
-        std::cout << "Result of division by zero: " << division_by_zero << std::endl;
-    } catch (const std::runtime_error& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-    }
+if (big > small) {
+    std::cout << "big is indeed bigger!" << std::endl;
+}
 
-    // 其他操作
-    OmniInt counter(10);
-    std::cout << "Counter initially: " << counter << std::endl;
-    counter++;
-    std::cout << "Counter after increment: " << counter << std::endl;
-    counter -= 5;
-    std::cout << "Counter after decrement: " << counter << std::endl;
-
-    return 0;
+if (big != small) {
+    std::cout << "They are not equal." << std::endl;
 }
 ```
 
-## 错误处理
+### 整数平方根
 
-OmniInt 库在遇到无效操作或参数时会抛出标准异常：
+使用全局 `sqrt` 函数计算整数平方根（向下取整）。
 
-- `std::invalid_argument`: 当从无效字符串构造或赋值 OmniInt 时。
-- `std::runtime_error`: 当执行除零或模零操作时。
-- `std::domain_error`: 当尝试计算负数的平方根时。
-- `std::overflow_error`: 当 toLongLong() 方法转换的值超出 long long 的范围时。
+```cpp
+OmniInt n("98765432109876543210");
+OmniInt root = sqrt(n);
+// root 的值为 "9938079900"
+std::cout << "The integer square root of " << n << " is " << root << std::endl;
+```
 
-强烈建议在使用这些可能引发异常的函数时，使用 try-catch 块进行错误处理。
+## 🛠️ 构建与测试
 
-## 许可证
+项目附带一个全面的测试程序 `test_omniint.cpp`，用于验证库的所有功能是否正确。
 
-本项目遵循 MIT 许可证。详见 LICENSE 文件
+1.  **编译测试程序**:
+    确保 `OmniInt.h` 和 `test_omniint.cpp` 在同一目录下。打开终端并执行以下命令：
 
-## 贡献
+    ```bash
+    # 使用 g++
+    g++ -std=c++11 -O2 -Wall -o test_runner test_omniint.cpp
 
-欢迎任何形式的贡献，包括错误报告、功能请求和代码优化。如果您想贡献，请：
+    # 或者使用 Clang
+    clang++ -std=c++11 -O2 -Wall -o test_runner test_omniint.cpp
+    ```
+    这会生成一个名为 `test_runner` 的可执行文件。
 
-1. Fork 本仓库。
-2. 创建您的功能分支 (`git checkout -b feature/AmazingFeature`)。
-3. 提交您的更改 (`git commit -m 'Add some AmazingFeature'`)。
-4. 推送到分支 (`git push origin feature/AmazingFeature`)。
-5. 打开一个 Pull Request。
+2.  **运行测试**:
 
-## 鸣谢
+    ```bash
+    ./test_runner
+    ```
 
-感谢所有为开源社区做出贡献的开发者和项目。
+    如果所有测试都通过，您将看到一个包含 `Passed: 75, Failed: 0` 的摘要。
 
-Copyright(C) 2025 SharkyMew
+## 📝 未来计划
+
+- **性能优化**: 内部存储方式可以从 `base 10` 优化为更大的基数（如 `base 2^32`），以大幅减少内存使用并提高计算速度。
+- **更多功能**:
+  -添加位运算符 (`&`, `|`, `^`, `<<`, `>>`)。
+  -实现更多数学函数，如 `pow()` (幂运算), `gcd()` (最大公约数) 等。
+
+## ©️ 版权与许可
+
+Copyright (c) 2025 SharkyMew
+
+本项目采用 [MIT许可证](https://opensource.org/licenses/MIT)。
