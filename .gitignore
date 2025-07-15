@@ -1,3 +1,5 @@
 .DS_Store
 .vscode
 test_omniint
+example.cpp
+example

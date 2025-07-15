@@ -278,6 +278,43 @@ void test_sqrt()
 }
 
 // =========================================================================
+// 新增: GCD 测试函数
+// =========================================================================
+void test_gcd()
+{
+    std::cout << "\n--- Testing gcd() Function ---\n";
+
+    // 基本情况
+    test_case("gcd(n, 0)", gcd(OmniInt(123), OmniInt(0)) == 123);
+    test_case("gcd(0, n)", gcd(OmniInt(0), OmniInt(123)) == 123);
+    test_case("gcd(0, 0)", gcd(OmniInt(0), OmniInt(0)) == 0);
+
+    // 常规情况
+    test_case("gcd(60, 48)", gcd(OmniInt(60), OmniInt(48)) == 12);
+    test_case("gcd(48, 60)", gcd(OmniInt(48), OmniInt(60)) == 12);
+
+    // 互质数
+    test_case("gcd(coprime numbers)", gcd(OmniInt(17), OmniInt(13)) == 1);
+
+    // 倍数关系
+    test_case("gcd(one is multiple of other)", gcd(OmniInt(100), OmniInt(20)) == 20);
+
+    // 符号处理 (结果应始终为非负)
+    test_case("gcd(-60, 48)", gcd(OmniInt(-60), OmniInt(48)) == 12);
+    test_case("gcd(60, -48)", gcd(OmniInt(60), OmniInt(-48)) == 12);
+    test_case("gcd(-60, -48)", gcd(OmniInt(-60), OmniInt(-48)) == 12);
+
+    // 大数测试
+    OmniInt g("1000000007"); // 一个较大的质数作为公因子
+    OmniInt x("17");         // 使用一个质数作为乘数
+    OmniInt y("19");         // 使用另一个不同的质数作为乘数 (17和19互质)
+
+    OmniInt a = g * x;
+    OmniInt b = g * y;
+    test_case("gcd(large numbers)", gcd(a, b) == g);
+}
+
+// =========================================================================
 // 主函数
 // =========================================================================
 
@@ -293,6 +330,7 @@ int main()
     test_compound_and_increment();
     test_utility_and_streams();
     test_sqrt();
+    test_gcd(); // <-- 新增对 gcd 测试的调用
     test_exceptions();
 
     std::cout << "\n----------------------------------------" << std::endl;
