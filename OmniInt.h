@@ -3,7 +3,9 @@ OmniInt.h
 
 This is a header file for high-precision integer calculations.
 
-Copyright(C) 2025 SharkyMew
+This project is just for learning
+
+Copyright(c) 2025 SharkyMew
 
 Version 1.6.0
 */
