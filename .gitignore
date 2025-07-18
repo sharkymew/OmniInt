@@ -3,3 +3,5 @@
 test_omniint
 example.cpp
 example
+example.dSYM/Contents/Info.plist
+example.dSYM/Contents/Resources/Relocations/aarch64/example.yml
