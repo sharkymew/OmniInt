@@ -1,7 +1,8 @@
 .DS_Store
 .vscode
 test_omniint
-example.cpp
-example
+test.cpp
+test
 example.dSYM/Contents/Info.plist
 example.dSYM/Contents/Resources/Relocations/aarch64/example.yml
+example.dSYM/Contents/Resources/DWARF/example
