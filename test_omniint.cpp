@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <limits>
 #include <sstream>
+#include <climits>
 
 #include "OmniInt.h"
 
