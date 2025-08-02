@@ -527,16 +527,23 @@ OmniInt &OmniInt::operator*=(const OmniInt &other)
         for (int i = abs_this.val.size() - 1; i >= 0; --i)
         {
             current_remainder = current_remainder * 10 + abs_this.val[i];
-            int digit = 0;
-            for (int d = 9; d >= 1; --d)
+
+            int low = 0, high = 9, digit = 0;
+            while (low <= high)
             {
-                if (multiples[d] <= current_remainder)
+                int mid = (low + high) / 2;
+                if (multiples[mid] <= current_remainder)
                 {
-                    digit = d;
-                    current_remainder -= multiples[d];
-                    break;
+                    digit = mid;
+                    low = mid + 1;
+                }
+                else
+                {
+                    high = mid - 1;
                 }
             }
+
+            current_remainder -= multiples[digit];
             quotient_digits.push_back(digit);
         }
 
@@ -693,41 +700,11 @@ OmniInt &OmniInt::operator*=(const OmniInt &other)
         a = a.abs();
         b = b.abs();
 
-        if (a.is_zero())
-            return b;
-        if (b.is_zero())
-            return a;
-
-        int twos_factor = 0;
-        while (a.is_even() && b.is_even())
-        {
-            a.halve_in_place();
-            b.halve_in_place();
-            twos_factor++;
-        }
-
-        while (a.is_even())
-        {
-            a.halve_in_place();
-        }
-
         while (!b.is_zero())
         {
-            while (b.is_even())
-            {
-                b.halve_in_place();
-            }
-
-            if (a > b)
-            {
-                std::swap(a, b);
-            }
-            b -= a;
-        }
-
-        for (int i = 0; i < twos_factor; ++i)
-        {
-            a *= 2;
+            OmniInt r = a % b;
+            a = std::move(b);
+            b = std::move(r);
         }
 
         return a;
