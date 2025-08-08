@@ -6,3 +6,4 @@ test
 example.dSYM/Contents/Info.plist
 example.dSYM/Contents/Resources/Relocations/aarch64/example.yml
 example.dSYM/Contents/Resources/DWARF/example
+test_omniint-test_omniint.json

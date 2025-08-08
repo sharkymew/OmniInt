@@ -5,12 +5,29 @@
 #include <limits>
 #include <sstream>
 #include <climits>
+#include <chrono>  // NEW: 计时
+#include <iomanip> // NEW: 小数格式
 
 #include "OmniInt.h"
 
 // 全局计数器，用于统计测试结果
 int tests_passed = 0;
 int tests_failed = 0;
+
+// NEW: 全局计时器
+std::chrono::steady_clock::time_point g_test_start;
+
+inline void start_global_timer()
+{
+    g_test_start = std::chrono::steady_clock::now();
+}
+
+inline long long elapsed_ms()
+{
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+               std::chrono::steady_clock::now() - g_test_start)
+        .count();
+}
 
 // =========================================================================
 // 测试辅助框架
@@ -325,6 +342,8 @@ int main()
     std::cout << "     Starting OmniInt Test Suite        " << std::endl;
     std::cout << "========================================" << std::endl;
 
+    start_global_timer(); // NEW: 启动全局计时
+
     test_constructors_and_assignment();
     test_relational_operators();
     test_arithmetic_operators();
@@ -339,6 +358,13 @@ int main()
     std::cout << "  Total tests run: " << tests_passed + tests_failed << std::endl;
     std::cout << "  Passed: " << tests_passed << std::endl;
     std::cout << "  Failed: " << tests_failed << std::endl;
+
+    // NEW: 打印总耗时（ms 与 s）
+    const auto ms = elapsed_ms();
+    std::cout << "  Elapsed time: " << ms << " ms ("
+              << std::fixed << std::setprecision(3)
+              << (ms / 1000.0) << " s)" << std::endl;
+
     std::cout << "========================================" << std::endl;
 
     // 如果有测试失败，返回非零退出码
