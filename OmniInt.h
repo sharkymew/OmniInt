@@ -396,318 +396,318 @@ OmniInt &OmniInt::operator*=(const OmniInt &other)
     return *this;
 }
 
-    OmniInt &OmniInt::operator/=(const OmniInt &other)
-    {
-        *this = *this / other;
-        return *this;
-    }
+OmniInt &OmniInt::operator/=(const OmniInt &other)
+{
+    *this = *this / other;
+    return *this;
+}
 
-    OmniInt &OmniInt::operator%=(const OmniInt &other)
-    {
-        *this = *this % other;
-        return *this;
-    }
+OmniInt &OmniInt::operator%=(const OmniInt &other)
+{
+    *this = *this % other;
+    return *this;
+}
 
-    // --- 自增自减 ---
-    OmniInt &OmniInt::operator++() { return *this += 1; }
-    OmniInt &OmniInt::operator--() { return *this -= 1; }
-    OmniInt OmniInt::operator++(int)
-    {
-        OmniInt temp = *this;
-        ++*this;
-        return temp;
-    }
-    OmniInt OmniInt::operator--(int)
-    {
-        OmniInt temp = *this;
-        --*this;
-        return temp;
-    }
+// --- 自增自减 ---
+OmniInt &OmniInt::operator++() { return *this += 1; }
+OmniInt &OmniInt::operator--() { return *this -= 1; }
+OmniInt OmniInt::operator++(int)
+{
+    OmniInt temp = *this;
+    ++*this;
+    return temp;
+}
+OmniInt OmniInt::operator--(int)
+{
+    OmniInt temp = *this;
+    --*this;
+    return temp;
+}
 
-    // --- 关系运算符 ---
-    bool OmniInt::operator<(const OmniInt &other) const { return compare(other) == -1; }
-    bool OmniInt::operator>(const OmniInt &other) const { return compare(other) == 1; }
-    bool OmniInt::operator<=(const OmniInt &other) const { return compare(other) <= 0; }
-    bool OmniInt::operator>=(const OmniInt &other) const { return compare(other) >= 0; }
-    bool OmniInt::operator==(const OmniInt &other) const { return compare(other) == 0; }
-    bool OmniInt::operator!=(const OmniInt &other) const { return compare(other) != 0; }
+// --- 关系运算符 ---
+bool OmniInt::operator<(const OmniInt &other) const { return compare(other) == -1; }
+bool OmniInt::operator>(const OmniInt &other) const { return compare(other) == 1; }
+bool OmniInt::operator<=(const OmniInt &other) const { return compare(other) <= 0; }
+bool OmniInt::operator>=(const OmniInt &other) const { return compare(other) >= 0; }
+bool OmniInt::operator==(const OmniInt &other) const { return compare(other) == 0; }
+bool OmniInt::operator!=(const OmniInt &other) const { return compare(other) != 0; }
 
-    // --- 其他成员函数 ---
-    long long OmniInt::toLongLong() const
+// --- 其他成员函数 ---
+long long OmniInt::toLongLong() const
+{
+    if (pos)
     {
-        if (pos)
+        static const OmniInt llong_max(std::numeric_limits<long long>::max());
+        if (*this > llong_max)
         {
-            static const OmniInt llong_max(std::numeric_limits<long long>::max());
-            if (*this > llong_max)
+            throw std::overflow_error("OmniInt value too large for long long");
+        }
+    }
+    else
+    {
+        static const OmniInt llong_min(std::numeric_limits<long long>::min());
+        if (*this < llong_min)
+        {
+            throw std::overflow_error("OmniInt value too small for long long");
+        }
+    }
+
+    long long result = 0;
+    for (int i = val.size() - 1; i >= 0; --i)
+    {
+        result = result * 10 + val[i];
+    }
+    return pos ? result : -result;
+}
+
+std::string OmniInt::toString() const
+{
+    if (is_zero())
+        return "0";
+    std::stringstream ss;
+    if (!pos)
+        ss << '-';
+    for (int i = val.size() - 1; i >= 0; --i)
+    {
+        ss << val[i];
+    }
+    return ss.str();
+}
+
+size_t OmniInt::digitCount() const
+{
+    if (is_zero())
+        return 1;
+    return val.size();
+}
+
+OmniInt OmniInt::abs() const
+{
+    OmniInt result = *this;
+    result.pos = true;
+    return result;
+}
+
+bool OmniInt::is_zero() const
+{
+    return val.size() == 1 && val[0] == 0;
+}
+
+bool OmniInt::is_even() const
+{
+    if (is_zero())
+        return true;
+    return val[0] % 2 == 0;
+}
+
+// --- 私有辅助函数实现 ---
+std::pair<OmniInt, OmniInt> OmniInt::divide_and_remainder(const OmniInt &divisor) const
+{
+    if (divisor.is_zero())
+    {
+        throw std::runtime_error("Division by zero");
+    }
+    if (abs() < divisor.abs())
+    {
+        return {OmniInt(0), *this};
+    }
+
+    OmniInt abs_this = abs();
+    OmniInt abs_divisor = divisor.abs();
+
+    std::vector<OmniInt> multiples(10);
+    for (int i = 1; i <= 9; ++i)
+    {
+        multiples[i] = abs_divisor * i;
+    }
+
+    std::vector<int> quotient_digits;
+    OmniInt current_remainder = 0;
+
+    for (int i = abs_this.val.size() - 1; i >= 0; --i)
+    {
+        current_remainder = current_remainder * 10 + abs_this.val[i];
+
+        int low = 0, high = 9, digit = 0;
+        while (low <= high)
+        {
+            int mid = (low + high) / 2;
+            if (multiples[mid] <= current_remainder)
             {
-                throw std::overflow_error("OmniInt value too large for long long");
+                digit = mid;
+                low = mid + 1;
+            }
+            else
+            {
+                high = mid - 1;
             }
         }
-        else
-        {
-            static const OmniInt llong_min(std::numeric_limits<long long>::min());
-            if (*this < llong_min)
-            {
-                throw std::overflow_error("OmniInt value too small for long long");
-            }
-        }
 
-        long long result = 0;
-        for (int i = val.size() - 1; i >= 0; --i)
-        {
-            result = result * 10 + val[i];
-        }
-        return pos ? result : -result;
+        current_remainder -= multiples[digit];
+        quotient_digits.push_back(digit);
     }
 
-    std::string OmniInt::toString() const
+    OmniInt quotient;
+    std::reverse(quotient_digits.begin(), quotient_digits.end());
+    quotient.val = quotient_digits;
+    quotient.trim();
+    quotient.pos = (this->pos == divisor.pos);
+    if (quotient.is_zero())
     {
-        if (is_zero())
-            return "0";
-        std::stringstream ss;
-        if (!pos)
-            ss << '-';
-        for (int i = val.size() - 1; i >= 0; --i)
-        {
-            ss << val[i];
-        }
-        return ss.str();
+        quotient.pos = true;
     }
 
-    size_t OmniInt::digitCount() const
+    OmniInt remainder = current_remainder;
+    remainder.pos = this->pos;
+    if (remainder.is_zero())
     {
-        if (is_zero())
-            return 1;
-        return val.size();
+        remainder.pos = true;
     }
 
-    OmniInt OmniInt::abs() const
+    return {quotient, remainder};
+}
+
+void OmniInt::trim()
+{
+    while (val.size() > 1 && val.back() == 0)
     {
-        OmniInt result = *this;
-        result.pos = true;
-        return result;
+        val.pop_back();
     }
+}
 
-    bool OmniInt::is_zero() const
+int OmniInt::compare(const OmniInt &other) const
+{
+    if (pos != other.pos)
     {
-        return val.size() == 1 && val[0] == 0;
+        return pos ? 1 : -1;
     }
-
-    bool OmniInt::is_even() const
+    if (is_zero() && other.is_zero())
     {
-        if (is_zero())
-            return true;
-        return val[0] % 2 == 0;
-    }
-
-    // --- 私有辅助函数实现 ---
-    std::pair<OmniInt, OmniInt> OmniInt::divide_and_remainder(const OmniInt &divisor) const
-    {
-        if (divisor.is_zero())
-        {
-            throw std::runtime_error("Division by zero");
-        }
-        if (abs() < divisor.abs())
-        {
-            return {OmniInt(0), *this};
-        }
-
-        OmniInt abs_this = abs();
-        OmniInt abs_divisor = divisor.abs();
-
-        std::vector<OmniInt> multiples(10);
-        for (int i = 1; i <= 9; ++i)
-        {
-            multiples[i] = abs_divisor * i;
-        }
-
-        std::vector<int> quotient_digits;
-        OmniInt current_remainder = 0;
-
-        for (int i = abs_this.val.size() - 1; i >= 0; --i)
-        {
-            current_remainder = current_remainder * 10 + abs_this.val[i];
-
-            int low = 0, high = 9, digit = 0;
-            while (low <= high)
-            {
-                int mid = (low + high) / 2;
-                if (multiples[mid] <= current_remainder)
-                {
-                    digit = mid;
-                    low = mid + 1;
-                }
-                else
-                {
-                    high = mid - 1;
-                }
-            }
-
-            current_remainder -= multiples[digit];
-            quotient_digits.push_back(digit);
-        }
-
-        OmniInt quotient;
-        std::reverse(quotient_digits.begin(), quotient_digits.end());
-        quotient.val = quotient_digits;
-        quotient.trim();
-        quotient.pos = (this->pos == divisor.pos);
-        if (quotient.is_zero())
-        {
-            quotient.pos = true;
-        }
-
-        OmniInt remainder = current_remainder;
-        remainder.pos = this->pos;
-        if (remainder.is_zero())
-        {
-            remainder.pos = true;
-        }
-
-        return {quotient, remainder};
-    }
-
-    void OmniInt::trim()
-    {
-        while (val.size() > 1 && val.back() == 0)
-        {
-            val.pop_back();
-        }
-    }
-
-    int OmniInt::compare(const OmniInt &other) const
-    {
-        if (pos != other.pos)
-        {
-            return pos ? 1 : -1;
-        }
-        if (is_zero() && other.is_zero())
-        {
-            return 0;
-        }
-
-        int sign_multiplier = pos ? 1 : -1;
-
-        if (val.size() < other.val.size())
-            return -1 * sign_multiplier;
-        if (val.size() > other.val.size())
-            return 1 * sign_multiplier;
-
-        for (int i = val.size() - 1; i >= 0; --i)
-        {
-            if (val[i] < other.val[i])
-                return -1 * sign_multiplier;
-            if (val[i] > other.val[i])
-                return 1 * sign_multiplier;
-        }
         return 0;
     }
 
-    void OmniInt::halve_in_place()
+    int sign_multiplier = pos ? 1 : -1;
+
+    if (val.size() < other.val.size())
+        return -1 * sign_multiplier;
+    if (val.size() > other.val.size())
+        return 1 * sign_multiplier;
+
+    for (int i = val.size() - 1; i >= 0; --i)
     {
-        if (is_zero())
-            return;
-        int carry = 0;
-        for (int i = val.size() - 1; i >= 0; --i)
+        if (val[i] < other.val[i])
+            return -1 * sign_multiplier;
+        if (val[i] > other.val[i])
+            return 1 * sign_multiplier;
+    }
+    return 0;
+}
+
+void OmniInt::halve_in_place()
+{
+    if (is_zero())
+        return;
+    int carry = 0;
+    for (int i = val.size() - 1; i >= 0; --i)
+    {
+        int current_val = val[i] + carry * 10;
+        val[i] = current_val / 2;
+        carry = current_val % 2;
+    }
+    trim();
+}
+
+// =========================================================================
+// Non-Member Functions - 非成员函数
+// =========================================================================
+
+// --- 外部运算符 (支持 long long 在左侧) ---
+inline OmniInt operator+(long long lhs, const OmniInt &rhs) { return OmniInt(lhs) + rhs; }
+inline OmniInt operator-(long long lhs, const OmniInt &rhs) { return OmniInt(lhs) - rhs; }
+inline OmniInt operator*(long long lhs, const OmniInt &rhs) { return OmniInt(lhs) * rhs; }
+inline OmniInt operator/(long long lhs, const OmniInt &rhs) { return OmniInt(lhs) / rhs; }
+inline OmniInt operator%(long long lhs, const OmniInt &rhs) { return OmniInt(lhs) % rhs; }
+
+// --- 流运算符 ---
+std::ostream &operator<<(std::ostream &os, const OmniInt &n)
+{
+    os << n.toString();
+    return os;
+}
+
+std::istream &operator>>(std::istream &is, OmniInt &n)
+{
+    std::string s;
+    if (is >> s)
+    {
+        try
         {
-            int current_val = val[i] + carry * 10;
-            val[i] = current_val / 2;
-            carry = current_val % 2;
+            n = s;
         }
-        trim();
+        catch (const std::invalid_argument &)
+        {
+            // 如果构造失败，设置流的错误状态
+            is.setstate(std::ios_base::failbit);
+        }
+    }
+    return is;
+}
+
+// --- 数学函数 ---
+OmniInt sqrt(const OmniInt &n)
+{
+    if (n < 0)
+    {
+        throw std::domain_error("Cannot compute square root of a negative number.");
+    }
+    if (n.is_zero())
+    {
+        return 0;
     }
 
-    // =========================================================================
-    // Non-Member Functions - 非成员函数
-    // =========================================================================
+    // 步骤 1: 构造一个绝对可靠的“过高”初始值 (overestimate)
+    // 这是保证后续循环逻辑正确性的关键。
+    // 一个 d 位数 n, 其 sqrt(n) 的位数是 ceil(d/2)。
+    // 我们构造一个比结果多一位的数 10^ceil(d/2)，它必然大于真实的 sqrt(n)。
+    size_t digits = n.digitCount();
+    size_t root_exponent = (digits + 1) / 2;
+    std::string guess_str(root_exponent + 1, '0');
+    guess_str[0] = '1';
+    OmniInt x(guess_str);
 
-    // --- 外部运算符 (支持 long long 在左侧) ---
-    inline OmniInt operator+(long long lhs, const OmniInt &rhs) { return OmniInt(lhs) + rhs; }
-    inline OmniInt operator-(long long lhs, const OmniInt &rhs) { return OmniInt(lhs) - rhs; }
-    inline OmniInt operator*(long long lhs, const OmniInt &rhs) { return OmniInt(lhs) * rhs; }
-    inline OmniInt operator/(long long lhs, const OmniInt &rhs) { return OmniInt(lhs) / rhs; }
-    inline OmniInt operator%(long long lhs, const OmniInt &rhs) { return OmniInt(lhs) % rhs; }
-
-    // --- 流运算符 ---
-    std::ostream &operator<<(std::ostream &os, const OmniInt &n)
+    // 步骤 2: 牛顿迭代。由于初始值 x 保证偏高，迭代序列将稳定单调递减。
+    OmniInt last_x;
+    do
     {
-        os << n.toString();
-        return os;
+        last_x = x;
+        x = (x + n / x) / 2;
+    } while (x < last_x);
+
+    // 步骤 3: 循环结束时，last_x 是最接近真实根的候选值
+    x = last_x;
+
+    // 步骤 4: 最终修正，防止因整数截断导致的 off-by-one 错误
+    // 如果我们得到的 x 的平方大于 n，说明 x 偏大了1，需要减一。
+    if (x * x > n)
+    {
+        x -= 1;
+    }
+    return x;
+}
+
+OmniInt gcd(OmniInt a, OmniInt b)
+{
+    a = a.abs();
+    b = b.abs();
+
+    while (!b.is_zero())
+    {
+        OmniInt r = a % b;
+        a = std::move(b);
+        b = std::move(r);
     }
 
-    std::istream &operator>>(std::istream &is, OmniInt &n)
-    {
-        std::string s;
-        if (is >> s)
-        {
-            try
-            {
-                n = s;
-            }
-            catch (const std::invalid_argument &)
-            {
-                // 如果构造失败，设置流的错误状态
-                is.setstate(std::ios_base::failbit);
-            }
-        }
-        return is;
-    }
-
-    // --- 数学函数 ---
-    OmniInt sqrt(const OmniInt &n)
-    {
-        if (n < 0)
-        {
-            throw std::domain_error("Cannot compute square root of a negative number.");
-        }
-        if (n.is_zero())
-        {
-            return 0;
-        }
-
-        // 步骤 1: 构造一个绝对可靠的“过高”初始值 (overestimate)
-        // 这是保证后续循环逻辑正确性的关键。
-        // 一个 d 位数 n, 其 sqrt(n) 的位数是 ceil(d/2)。
-        // 我们构造一个比结果多一位的数 10^ceil(d/2)，它必然大于真实的 sqrt(n)。
-        size_t digits = n.digitCount();
-        size_t root_exponent = (digits + 1) / 2;
-        std::string guess_str(root_exponent + 1, '0');
-        guess_str[0] = '1';
-        OmniInt x(guess_str);
-
-        // 步骤 2: 牛顿迭代。由于初始值 x 保证偏高，迭代序列将稳定单调递减。
-        OmniInt last_x;
-        do
-        {
-            last_x = x;
-            x = (x + n / x) / 2;
-        } while (x < last_x);
-
-        // 步骤 3: 循环结束时，last_x 是最接近真实根的候选值
-        x = last_x;
-
-        // 步骤 4: 最终修正，防止因整数截断导致的 off-by-one 错误
-        // 如果我们得到的 x 的平方大于 n，说明 x 偏大了1，需要减一。
-        if (x * x > n)
-        {
-            x -= 1;
-        }
-        return x;
-    }
-
-    OmniInt gcd(OmniInt a, OmniInt b)
-    {
-        a = a.abs();
-        b = b.abs();
-
-        while (!b.is_zero())
-        {
-            OmniInt r = a % b;
-            a = std::move(b);
-            b = std::move(r);
-        }
-
-        return a;
-    }
+    return a;
+}
 
 #endif // OmniInt_H
