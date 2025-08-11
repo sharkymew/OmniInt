@@ -4,7 +4,7 @@
 ![Standard](https://img.shields.io/badge/C%2B%2B-11%2B-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-pink.svg)
 
-**OmniInt** 是一个轻量级、仅含头文件的 C++ 库，用于进行任意大小的整数（高精度）算术运算。它旨在克服 C++ 内置整数类型（如 `int`, `long long`）的范围限制，让大数计算变得像操作普通整数一样简单直观。
+**OmniInt** 是一个轻量级、仅含头文件的 C++ 库，用于进行任意大小的整数（高精度）算术运算。它旨在克服 C++ 内置整数类型（如 `int`, `long long`）的范围限制，让大数计算变得像操作普通整数一样简单直观。如果您发现了计算错误、性能问题或想要提出问题，请提交Issues或PR.
 
 Tips：
 
