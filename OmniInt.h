@@ -435,9 +435,11 @@ bool OmniInt::operator!=(const OmniInt &other) const { return compare(other) != 
 // --- 其他成员函数 ---
 long long OmniInt::toLongLong() const
 {
+    static const OmniInt llong_max(std::numeric_limits<long long>::max());
+    static const OmniInt llong_min(std::numeric_limits<long long>::min());
+
     if (pos)
     {
-        static const OmniInt llong_max(std::numeric_limits<long long>::max());
         if (*this > llong_max)
         {
             throw std::overflow_error("OmniInt value too large for long long");
@@ -445,19 +447,30 @@ long long OmniInt::toLongLong() const
     }
     else
     {
-        static const OmniInt llong_min(std::numeric_limits<long long>::min());
         if (*this < llong_min)
         {
             throw std::overflow_error("OmniInt value too small for long long");
         }
     }
 
-    long long result = 0;
+    unsigned long long magnitude = 0;
     for (int i = val.size() - 1; i >= 0; --i)
     {
-        result = result * 10 + val[i];
+        magnitude = magnitude * 10 + static_cast<unsigned long long>(val[i]);
     }
-    return pos ? result : -result;
+
+    if (pos)
+    {
+        return static_cast<long long>(magnitude);
+    }
+
+    const unsigned long long min_magnitude =
+        static_cast<unsigned long long>(std::numeric_limits<long long>::max()) + 1ULL;
+    if (magnitude == min_magnitude)
+    {
+        return std::numeric_limits<long long>::min();
+    }
+    return -static_cast<long long>(magnitude);
 }
 
 std::string OmniInt::toString() const
@@ -518,7 +531,7 @@ std::pair<OmniInt, OmniInt> OmniInt::divide_and_remainder(const OmniInt &divisor
     std::vector<OmniInt> multiples(10);
     for (int i = 1; i <= 9; ++i)
     {
-        multiples[i] = abs_divisor * i;
+        multiples[i] = multiples[i - 1] + abs_divisor;
     }
 
     std::vector<int> quotient_digits;

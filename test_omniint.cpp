@@ -268,6 +268,23 @@ void test_utility_and_streams()
     test_case("Stream I/O (<< and >>)", a == b);
 }
 
+void test_toLongLong_limits()
+{
+    std::cout << "\n--- Testing toLongLong() Limits ---\n";
+
+    OmniInt max_val(std::numeric_limits<long long>::max());
+    test_case("toLongLong() at LLONG_MAX",
+              max_val.toLongLong() == std::numeric_limits<long long>::max());
+
+    OmniInt min_val(std::numeric_limits<long long>::min());
+    test_case("toLongLong() at LLONG_MIN",
+              min_val.toLongLong() == std::numeric_limits<long long>::min());
+
+    OmniInt mid_neg("-123456789012345678");
+    test_case("toLongLong() negative mid-range",
+              mid_neg.toLongLong() == -123456789012345678LL);
+}
+
 void test_sqrt()
 {
     std::cout << "\n--- Testing sqrt() Function ---\n";
@@ -349,6 +366,7 @@ int main()
     test_arithmetic_operators();
     test_compound_and_increment();
     test_utility_and_streams();
+    test_toLongLong_limits();
     test_sqrt();
     test_gcd(); // <-- 新增对 gcd 测试的调用
     test_exceptions();
